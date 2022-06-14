@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Data Processing in the Tidyverse</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Data Processing in the Tidyverse
+]
+.institute[
+### Using Administrative Data for<br>Clinical and Health Services Research
+]
+
+---
+
+
+
+
+
+
+
+
+
+
+
+# Overview
+
+- Tidyverse plug
+
+- Selecting columns with `select`
+
+- Subsetting rows with `filter`
+
+- Summarizing by group with `group_by` / `summarise`
+
+
+---
+
+background-image: url(img/tidyverse-home.png)
+background-size: 1000px
+
+
+---
+
+
+background-image: url(img/dplyr-home.png)
+background-size: 900px
+
+
+---
+
+
+background-image: url(img/ggplot2-reference.png)
+background-size: 925px
+
+
+---
+
+
+# Selecting columns
+
+- Specific columns in a data set can be chosen using `dplyr::select`
+
+  - As with `mutate`, first argument is a data set, subsequent arguments are expressions, and the result is a new data set
+  
+- Offers a variety of ways to choose multiple columns at once, making it a significant improvement on approaches available in base R.
+
+
+---
+
+
+# Selecting columns
+
+### By name
+
+
+```r
+# Create a data set of discharge- and patient-specific identifiers.
+disch_identifiers &lt;- select(core1p, KEY, VisitLink, DaysToEvent, LOS)
+colnames(disch_identifiers)
+```
+
+```
+## [1] "KEY"         "VisitLink"   "DaysToEvent" "LOS"
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a character vector
+
+
+```r
+# Create a data set containing the variables related to patient
+# residence.
+vars_patient_residence &lt;- c(
+  "PSTATE", "PSTCO", "PSTCO2", "PSTCO_GEO", "ZIP")
+disch_patient_residence &lt;- select(
+  core1p, all_of(vars_patient_residence))
+colnames(disch_patient_residence)
+```
+
+```
+## [1] "PSTATE"    "PSTCO"     "PSTCO2"    "PSTCO_GEO" "ZIP"
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a common prefix
+
+
+```r
+# Create a data set consisting of the procedure code columns.
+disch_prcodes &lt;- select(core1p, starts_with("I10_PR"))
+colnames(disch_prcodes)
+```
+
+```
+##  [1] "I10_PR1"  "I10_PR2"  "I10_PR3"  "I10_PR4"  "I10_PR5"  "I10_PR6" 
+##  [7] "I10_PR7"  "I10_PR8"  "I10_PR9"  "I10_PR10" "I10_PR11" "I10_PR12"
+## [13] "I10_PR13" "I10_PR14" "I10_PR15" "I10_PR16" "I10_PR17" "I10_PR18"
+## [19] "I10_PR19" "I10_PR20" "I10_PR21" "I10_PR22" "I10_PR23" "I10_PR24"
+## [25] "I10_PR25" "I10_PR26" "I10_PR27" "I10_PR28" "I10_PR29" "I10_PR30"
+## [31] "I10_PR31"
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a common suffix
+
+
+```r
+# Select all of the "from source" columns (i.e., columns whose values
+# were not edited by HCUP).
+disch_from_source &lt;- select(core1p, ends_with("_X"))
+colnames(disch_from_source)
+```
+
+```
+## [1] "DISP_X"   "LOS_X"    "PAY1_X"   "RACE_X"   "TOTCHG_X"
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a common sequence of characters somewhere in the names
+
+
+```r
+# Select all columns with income-related information.
+disch_income &lt;- select(core1p, contains("INC"))
+colnames(disch_income)
+```
+
+```
+## [1] "MEDINCSTQ"   "ZIPINC_QRTL"
+```
+
+
+---
+
+
+# Selecting columns
+
+### By sequence based on column order
+
+- Inspired by shorthand for sequence of integers: `1:3` `\(\equiv\)` `c(1,2,3)`
+
+
+```r
+# Select `VisitLink` and `DSHOSPID` and everything in between.
+disch_VisitLink_to_DSHOSPID &lt;- select(core1p, VisitLink:DSHOSPID)
+colnames(disch_VisitLink_to_DSHOSPID)
+```
+
+```
+##  [1] "VisitLink"   "AGE"         "AHOUR"       "ATYPE"      
+##  [5] "AWEEKEND"    "DaysToEvent" "DIED"        "DISP_X"     
+##  [9] "DISPUB04"    "DISPUNIFORM" "DQTR"        "DSHOSPID"
+```
+
+
+---
+
+
+- Using column positions can be risky
+- Suppose we want to select all diagnosis code columns
+
+
+
+
+```r
+disch_all_dx_codes_wrong &lt;- select(
+  core1p, I10_DX_Admitting:I10_DX34, I10_ECAUSE1:I10_ECAUSE6)
+colnames(disch_all_dx_codes_wrong)
+```
+
+```
+##   [1] "I10_DX_Admitting"     "I10_DX1"              "I10_DX2"              "I10_DX3"              "I10_DX4"             
+##   [6] "I10_DX5"              "I10_DX6"              "I10_DX7"              "I10_DX8"              "I10_DX9"             
+##  [11] "I10_DX10"             "I10_DX11"             "I10_DX12"             "I10_DX13"             "I10_DX14"            
+##  [16] "I10_DX15"             "I10_DX16"             "I10_DX17"             "I10_DX18"             "I10_DX19"            
+##  [21] "I10_DX20"             "I10_DX21"             "I10_DX22"             "I10_DX23"             "I10_DX24"            
+##  [26] "I10_DX25"             "I10_DX26"             "I10_DX27"             "I10_DX28"             "I10_DX29"            
+##  [31] "I10_DX30"             "I10_DX31"             "I10_ECAUSE1"          "I10_ECAUSE2"          "I10_ECAUSE3"         
+##  [36] "I10_ECAUSE4"          "I10_ECAUSE5"          "I10_ECAUSE6"          "I10_NDX"              "I10_NECAUSE"         
+##  [41] "I10_NPR"              "I10_PR1"              "I10_PR2"              "I10_PR3"              "I10_PR4"             
+##  [46] "I10_PR5"              "I10_PR6"              "I10_PR7"              "I10_PR8"              "I10_PR9"             
+##  [51] "I10_PR10"             "I10_PR11"             "I10_PR12"             "I10_PR13"             "I10_PR14"            
+##  [56] "I10_PR15"             "I10_PR16"             "I10_PR17"             "I10_PR18"             "I10_PR19"            
+##  [61] "I10_PR20"             "I10_PR21"             "I10_PR22"             "I10_PR23"             "I10_PR24"            
+##  [66] "I10_PR25"             "I10_PR26"             "I10_PR27"             "I10_PR28"             "I10_PR29"            
+##  [71] "I10_PR30"             "I10_PR31"             "KEY"                  "LOS"                  "LOS_X"               
+##  [76] "MEDINCSTQ"            "PAY1"                 "PAY1_X"               "PL_CBSA"              "PL_NCHS"             
+##  [81] "PL_RUCC"              "PL_UIC"               "PL_UR_CAT4"           "POA_Disch_Edit1"      "POA_Disch_Edit2"     
+##  [86] "POA_Hosp_Edit1"       "POA_Hosp_Edit3_Value" "PointOfOriginUB04"    "PRDAY1"               "PRDAY2"              
+##  [91] "PRDAY3"               "PRDAY4"               "PRDAY5"               "PRDAY6"               "PRDAY7"              
+##  [96] "PRDAY8"               "PRDAY9"               "PRDAY10"              "PRDAY11"              "PRDAY12"             
+## [101] "PRDAY13"              "PRDAY14"              "PRDAY15"              "PRDAY16"              "PRDAY17"             
+## [106] "PRDAY18"              "PRDAY19"              "PRDAY20"              "PRDAY21"              "PRDAY22"             
+## [111] "PRDAY23"              "PRDAY24"              "PRDAY25"              "PRDAY26"              "PRDAY27"             
+## [116] "PRDAY28"              "PRDAY29"              "PRDAY30"              "PRDAY31"              "PSTATE"              
+## [121] "PSTCO2"               "RACE"                 "RACE_X"               "TOTCHG"               "TOTCHG_X"            
+## [126] "TRAN_IN"              "TRAN_OUT"             "YEAR"                 "ZIP"                  "ZIPINC_QRTL"         
+## [131] "DXPOA32"              "DXPOA33"              "DXPOA34"              "I10_DX32"             "I10_DX33"            
+## [136] "I10_DX34"
+```
+
+
+
+
+---
+
+
+# Selecting columns
+
+### By sequence based on column order
+
+- Different years of data have different numbers of diagnosis codes
+- 1% sample data set was formed by stacking the annual CORE files
+  - `I10_DX_Admitting`&amp;ndash;`I10_DX31` contiguous but not with `I10_DX32`&amp;ndash;`I10_DX34`
+  
+- In general, selection based on column names is more reliable
+
+--
+
+- Regardless, always check your selection with `str`, `colnames`, or by printing or `View`ing the resulting data set
+
+
+---
+
+
+# Selecting columns
+
+### By sequence based on column order
+
+
+```r
+disch_all_dx_codes_right &lt;- select(
+  core1p, starts_with("I10_DX"), starts_with("I10_ECAUSE"))
+colnames(disch_all_dx_codes_right)
+```
+
+```
+##  [1] "I10_DX_Admitting" "I10_DX1"          "I10_DX2"         
+##  [4] "I10_DX3"          "I10_DX4"          "I10_DX5"         
+##  [7] "I10_DX6"          "I10_DX7"          "I10_DX8"         
+## [10] "I10_DX9"          "I10_DX10"         "I10_DX11"        
+## [13] "I10_DX12"         "I10_DX13"         "I10_DX14"        
+## [16] "I10_DX15"         "I10_DX16"         "I10_DX17"        
+## [19] "I10_DX18"         "I10_DX19"         "I10_DX20"        
+## [22] "I10_DX21"         "I10_DX22"         "I10_DX23"        
+## [25] "I10_DX24"         "I10_DX25"         "I10_DX26"        
+## [28] "I10_DX27"         "I10_DX28"         "I10_DX29"        
+## [31] "I10_DX30"         "I10_DX31"         "I10_DX32"        
+## [34] "I10_DX33"         "I10_DX34"         "I10_ECAUSE1"     
+## [37] "I10_ECAUSE2"      "I10_ECAUSE3"      "I10_ECAUSE4"     
+## [40] "I10_ECAUSE5"      "I10_ECAUSE6"
+```
+
+
+---
+
+
+# Selecting columns
+
+### By negation
+
+- i.e., "select everything except..."
+
+
+```r
+# Create a data set excluding all columns related to diagnosis and
+# procedures codes, including POA codes and the `PRDAY`n fields.
+disch_no_dx_or_pr_codes &lt;- select(
+  core1p,
+  !c(
+    starts_with("I10_"), starts_with("DXPOA"), starts_with("E_POA"),
+    starts_with("PRDAY"))
+)
+colnames(disch_no_dx_or_pr_codes)
+```
+
+```
+##  [1] "VisitLink"            "AGE"                 
+##  [3] "AHOUR"                "ATYPE"               
+##  [5] "AWEEKEND"             "DaysToEvent"         
+##  [7] "DIED"                 "DISP_X"              
+##  [9] "DISPUB04"             "DISPUNIFORM"         
+## [11] "DQTR"                 "DSHOSPID"            
+## [13] "EDHOUR"               "FEMALE"              
+## [15] "HCUP_ED"              "HISPANIC"            
+## [17] "Homeless"             "HospitalUnit"        
+## [19] "KEY"                  "LOS"                 
+## [21] "LOS_X"                "MEDINCSTQ"           
+## [23] "PAY1"                 "PAY1_X"              
+## [25] "PL_CBSA"              "PL_NCHS"             
+## [27] "PL_RUCC"              "PL_UIC"              
+## [29] "PL_UR_CAT4"           "POA_Disch_Edit1"     
+## [31] "POA_Disch_Edit2"      "POA_Hosp_Edit1"      
+## [33] "POA_Hosp_Edit3_Value" "PointOfOriginUB04"   
+## [35] "PSTATE"               "PSTCO2"              
+## [37] "RACE"                 "RACE_X"              
+## [39] "TOTCHG"               "TOTCHG_X"            
+## [41] "TRAN_IN"              "TRAN_OUT"            
+## [43] "YEAR"                 "ZIP"                 
+## [45] "ZIPINC_QRTL"          "PSTCO"               
+## [47] "PSTATE_GEO"           "PSTCO_GEO"
+```
+
+- `!` inverts the selection
+- Note that `!c(...)` is required
+
+
+---
+
+
+# Subsetting rows
+
+- Aside from the column exclusion, `!` is often used in three cases:
+
+1. Select nonmissing values
+  - `!is.na(x)`
+  
+2. Checking for non-equality
+  - `x != 0`
+  
+3. Select values *not in* a specific set of values
+  - `!(x %in% y)`
+  - Can be difficult to read if part of complex expression, so may want to use special 'not in' operator `x %nin% y`; this requires loading Hmisc with `library(Hmisc)`
+
+
+---
+
+
+# Subsetting rows
+
+- Relies on expressions that return `TRUE` or `FALSE`
+
+--
+
+- Used several of these types of expressions when defining variables in previous lecture:
+
+  - `is.na(LOS)`
+  - `AGE &gt;= 18`
+  - `PAY1 == 1`
+  - `TRAN_IN %in% c(1, 2)`
+  
+  
+---
+
+
+# Subsetting rows
+
+- Tidyverse subsetting uses `filter`
+
+- Can combine multiple expressions or write them as separate arguments
+
+  - The arguments are implicitly combined using `&amp;`
+
+
+```r
+disch_adults1 &lt;- filter(core1p, !is.na(AGE) &amp; AGE &gt;= 18)
+disch_adults2 &lt;- filter(core1p, !is.na(AGE), AGE &gt;= 18)
+```
+
+--
+
+- Expressions connected by 'or' have to be combined
+
+
+```r
+disch_transfer_in_or_out &lt;- filter(
+  core1p, TRAN_IN %in% c(1, 2) | TRAN_OUT %in% c(1, 2))
+```
+
+
+---
+
+
+# Grouping data
+
+- We can tell dplyr we want to process data by a grouping factor using `group_by`
+
+  - Doesn't directly change the data set, just how other functions work
+  
+--
+  
+### Summarizing by group
+
+- `group_by` is most often used with `summarise` to compute summary statistics within each group
+
+
+```r
+# Create a data set containing the number of discharges for each
+# patient.
+disch_grouped_by_patient &lt;- group_by(core1p, VisitLink)
+p_dischcharge_counts &lt;- summarise(
+  disch_grouped_by_patient, dischcharge_count = n())
+```
+
+- `group_by` paired with `summarise` changes the level of organization of the data&amp;mdash;here from discharge level to patient level
+
+
+---
+
+
+# Summarizing by group
+
+
+
+```r
+disch_grouped_by_patient
+```
+
+```
+## # A tibble: 102,733 × 194
+## # Groups:   VisitLink [48,085]
+##    VisitLink   AGE AHOUR ATYPE AWEEKEND DaysToEvent  DIED DISP_X
+##        &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; 
+##  1  15965139    74  1400     1        0       18739     0 01    
+##  2  16050018    77  1300     1        0       18655     0 03    
+##  3  16050018    77  2300     1        1       18623     0 03    
+##  4   2092107    32  2300     1        0       17883     0 01    
+##  5   8726364    66  1600     1        0       17252     0 06    
+##  6    390742    61  2300     1        0       18869     0 06    
+##  7    390742    61     0     1        1       18844     0 01    
+##  8  24417038    62  2200     1        1       19810     0 01    
+##  9  24344014    67   600     1        0       20164     0 01    
+## 10  22892274     9   900     3        0       16852     0 01    
+## # … with 102,723 more rows, and 186 more variables: DISPUB04 &lt;dbl&gt;,
+## #   DISPUNIFORM &lt;dbl&gt;, DQTR &lt;dbl&gt;, DSHOSPID &lt;chr&gt;, DXPOA1 &lt;chr&gt;,
+## #   DXPOA2 &lt;chr&gt;, DXPOA3 &lt;chr&gt;, DXPOA4 &lt;chr&gt;, DXPOA5 &lt;chr&gt;,
+## #   DXPOA6 &lt;chr&gt;, DXPOA7 &lt;chr&gt;, DXPOA8 &lt;chr&gt;, DXPOA9 &lt;chr&gt;,
+## #   DXPOA10 &lt;chr&gt;, DXPOA11 &lt;chr&gt;, DXPOA12 &lt;chr&gt;, DXPOA13 &lt;chr&gt;,
+## #   DXPOA14 &lt;chr&gt;, DXPOA15 &lt;chr&gt;, DXPOA16 &lt;chr&gt;, DXPOA17 &lt;chr&gt;,
+## #   DXPOA18 &lt;chr&gt;, DXPOA19 &lt;chr&gt;, DXPOA20 &lt;chr&gt;, DXPOA21 &lt;chr&gt;, …
+```
+
+
+---
+
+
+# Summarizing by group
+
+
+
+```r
+p_dischcharge_counts
+```
+
+```
+## # A tibble: 48,085 × 2
+##    VisitLink dischcharge_count
+##        &lt;dbl&gt;             &lt;int&gt;
+##  1       365                 3
+##  2       626                 3
+##  3       641                 4
+##  4       769                 1
+##  5       846                 8
+##  6       951                 9
+##  7      1304                 1
+##  8      1411                 2
+##  9      1463                 3
+## 10      2556                 1
+## # … with 48,075 more rows
+```
+
+
+---
+
+
+# The pipe `%&gt;%` operator
+
+- Many packages in the Tidyverse are designed to work with the pipe operator, `%&gt;%`
+
+--
+
+- Takes the result of the expression on the 'left-hand side' and passes it as the first argument to the expression on the 'right-hand side'.
+
+--
+
+- Useful because each of the tidyverse functions we've looked at so far&amp;mdash;`mutate`, `select`, `filter`, `group_by`, and `summarise`&amp;mdash; all take a data set as their first argument and produce a new data set as output
+
+
+---
+
+
+# The pipe `%&gt;%` operator
+
+So we can write
+
+
+```r
+disch_identifiers &lt;- select(core1p, KEY, VisitLink, DaysToEvent, LOS)
+```
+
+as
+
+
+```r
+disch_identifiers &lt;- core1p %&gt;%
+  select(KEY, VisitLink, DaysToEvent, LOS)
+```
+
+--
+
+- Most useful when needing to 'chain' several commands together but don't want to save intermediate results or write a nested set of function calls
+
+
+---
+
+
+Suppose we want the procedure code and procedure day columns for all adults starting in 2016. We could write
+
+
+```r
+disch_adults &lt;- filter(core1p, !is.na(AGE), AGE &gt;= 18, YEAR &gt;= 2016)
+disch_adults_pra &lt;- select(
+  disch_adults,
+  KEY, VisitLink, DaysToEvent, LOS, starts_with("I0_PR"),
+  starts_with("PRDAY"))
+```
+
+or
+
+
+```r
+disch_adults_prb &lt;-
+  select(
+    filter(
+      core1p,
+      !is.na(AGE), AGE &gt;= 18, YEAR &gt;= 2016
+    ),
+    KEY, VisitLink, DaysToEvent, LOS, starts_with("I0_PR"),
+    starts_with("PRDAY")
+  )
+```
+
+
+---
+
+
+# The pipe `%&gt;%` operator
+
+But a bit clearer would be
+
+
+```r
+disch_adults_prc &lt;- core1p %&gt;%
+  filter(!is.na(AGE), AGE &gt;= 18, YEAR &gt;= 2016) %&gt;%
+  select(
+    KEY, VisitLink, DaysToEvent, LOS, starts_with("I0_PR"),
+    starts_with("PRDAY")
+  )
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

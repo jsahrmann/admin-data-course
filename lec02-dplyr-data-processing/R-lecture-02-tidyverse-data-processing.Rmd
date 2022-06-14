@@ -1,0 +1,439 @@
+---
+title: "Data Processing in the Tidyverse"
+institute: "Using Administrative Data for<br>Clinical and Health Services Research"
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include = FALSE, cache = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE
+)
+```
+
+```{r xaringan-themer, include = FALSE, warning = FALSE}
+xaringanthemer::style_solarized_light()
+```
+
+```{r knit, eval = FALSE, include = FALSE}
+rmarkdown::render("./R-lecture-02-tidyverse-data-processing.Rmd")
+```
+
+```{r demo-setup, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+
+options(width = 70)
+
+setwd("//storage1.ris.wustl.edu/colditzg/Active/admin_course_jsahrmann")
+core1p <- read_rds("../admin_course_data/fl_sidc_core_1pSample.rds")
+```
+
+
+# Overview
+
+- Tidyverse plug
+
+- Selecting columns with `select`
+
+- Subsetting rows with `filter`
+
+- Summarizing by group with `group_by` / `summarise`
+
+
+---
+
+background-image: url(img/tidyverse-home.png)
+background-size: 1000px
+
+
+---
+
+
+background-image: url(img/dplyr-home.png)
+background-size: 900px
+
+
+---
+
+
+background-image: url(img/ggplot2-reference.png)
+background-size: 925px
+
+
+---
+
+
+# Selecting columns
+
+- Specific columns in a data set can be chosen using `dplyr::select`
+
+  - As with `mutate`, first argument is a data set, subsequent arguments are expressions, and the result is a new data set
+  
+- Offers a variety of ways to choose multiple columns at once, making it a significant improvement on approaches available in base R.
+
+
+---
+
+
+# Selecting columns
+
+### By name
+
+```{r}
+# Create a data set of discharge- and patient-specific identifiers.
+disch_identifiers <- select(core1p, KEY, VisitLink, DaysToEvent, LOS)
+colnames(disch_identifiers)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a character vector
+
+```{r}
+# Create a data set containing the variables related to patient
+# residence.
+vars_patient_residence <- c(
+  "PSTATE", "PSTCO", "PSTCO2", "PSTCO_GEO", "ZIP")
+disch_patient_residence <- select(
+  core1p, all_of(vars_patient_residence))
+colnames(disch_patient_residence)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a common prefix
+
+```{r}
+# Create a data set consisting of the procedure code columns.
+disch_prcodes <- select(core1p, starts_with("I10_PR"))
+colnames(disch_prcodes)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a common suffix
+
+```{r}
+# Select all of the "from source" columns (i.e., columns whose values
+# were not edited by HCUP).
+disch_from_source <- select(core1p, ends_with("_X"))
+colnames(disch_from_source)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By a common sequence of characters somewhere in the names
+
+```{r}
+# Select all columns with income-related information.
+disch_income <- select(core1p, contains("INC"))
+colnames(disch_income)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By sequence based on column order
+
+- Inspired by shorthand for sequence of integers: `1:3` $\equiv$ `c(1,2,3)`
+
+```{r}
+# Select `VisitLink` and `DSHOSPID` and everything in between.
+disch_VisitLink_to_DSHOSPID <- select(core1p, VisitLink:DSHOSPID)
+colnames(disch_VisitLink_to_DSHOSPID)
+```
+
+
+---
+
+
+- Using column positions can be risky
+- Suppose we want to select all diagnosis code columns
+
+```{r include = FALSE}
+options(width = 120)
+```
+
+```{r}
+disch_all_dx_codes_wrong <- select(
+  core1p, I10_DX_Admitting:I10_DX34, I10_ECAUSE1:I10_ECAUSE6)
+colnames(disch_all_dx_codes_wrong)
+```
+
+```{r include = FALSE}
+options(width = 70)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By sequence based on column order
+
+- Different years of data have different numbers of diagnosis codes
+- 1% sample data set was formed by stacking the annual CORE files
+  - `I10_DX_Admitting`&ndash;`I10_DX31` contiguous but not with `I10_DX32`&ndash;`I10_DX34`
+  
+- In general, selection based on column names is more reliable
+
+--
+
+- Regardless, always check your selection with `str`, `colnames`, or by printing or `View`ing the resulting data set
+
+
+---
+
+
+# Selecting columns
+
+### By sequence based on column order
+
+```{r}
+disch_all_dx_codes_right <- select(
+  core1p, starts_with("I10_DX"), starts_with("I10_ECAUSE"))
+colnames(disch_all_dx_codes_right)
+```
+
+
+---
+
+
+# Selecting columns
+
+### By negation
+
+- i.e., "select everything except..."
+
+```{r}
+# Create a data set excluding all columns related to diagnosis and
+# procedures codes, including POA codes and the `PRDAY`n fields.
+disch_no_dx_or_pr_codes <- select(
+  core1p,
+  !c(
+    starts_with("I10_"), starts_with("DXPOA"), starts_with("E_POA"),
+    starts_with("PRDAY"))
+)
+colnames(disch_no_dx_or_pr_codes)
+```
+
+- `!` inverts the selection
+- Note that `!c(...)` is required
+
+
+---
+
+
+# Subsetting rows
+
+- Aside from the column exclusion, `!` is often used in three cases:
+
+1. Select nonmissing values
+  - `!is.na(x)`
+  
+2. Checking for non-equality
+  - `x != 0`
+  
+3. Select values *not in* a specific set of values
+  - `!(x %in% y)`
+  - Can be difficult to read if part of complex expression, so may want to use special 'not in' operator `x %nin% y`; this requires loading Hmisc with `library(Hmisc)`
+
+
+---
+
+
+# Subsetting rows
+
+- Relies on expressions that return `TRUE` or `FALSE`
+
+--
+
+- Used several of these types of expressions when defining variables in previous lecture:
+
+  - `is.na(LOS)`
+  - `AGE >= 18`
+  - `PAY1 == 1`
+  - `TRAN_IN %in% c(1, 2)`
+  
+  
+---
+
+
+# Subsetting rows
+
+- Tidyverse subsetting uses `filter`
+
+- Can combine multiple expressions or write them as separate arguments
+
+  - The arguments are implicitly combined using `&`
+
+```{r}
+disch_adults1 <- filter(core1p, !is.na(AGE) & AGE >= 18)
+disch_adults2 <- filter(core1p, !is.na(AGE), AGE >= 18)
+```
+
+--
+
+- Expressions connected by 'or' have to be combined
+
+```{r}
+disch_transfer_in_or_out <- filter(
+  core1p, TRAN_IN %in% c(1, 2) | TRAN_OUT %in% c(1, 2))
+```
+
+
+---
+
+
+# Grouping data
+
+- We can tell dplyr we want to process data by a grouping factor using `group_by`
+
+  - Doesn't directly change the data set, just how other functions work
+  
+--
+  
+### Summarizing by group
+
+- `group_by` is most often used with `summarise` to compute summary statistics within each group
+
+```{r}
+# Create a data set containing the number of discharges for each
+# patient.
+disch_grouped_by_patient <- group_by(core1p, VisitLink)
+p_dischcharge_counts <- summarise(
+  disch_grouped_by_patient, dischcharge_count = n())
+```
+
+- `group_by` paired with `summarise` changes the level of organization of the data&mdash;here from discharge level to patient level
+
+
+---
+
+
+# Summarizing by group
+
+
+```{r}
+disch_grouped_by_patient
+```
+
+
+---
+
+
+# Summarizing by group
+
+
+```{r}
+p_dischcharge_counts
+```
+
+
+---
+
+
+# The pipe `%>%` operator
+
+- Many packages in the Tidyverse are designed to work with the pipe operator, `%>%`
+
+--
+
+- Takes the result of the expression on the 'left-hand side' and passes it as the first argument to the expression on the 'right-hand side'.
+
+--
+
+- Useful because each of the tidyverse functions we've looked at so far&mdash;`mutate`, `select`, `filter`, `group_by`, and `summarise`&mdash; all take a data set as their first argument and produce a new data set as output
+
+
+---
+
+
+# The pipe `%>%` operator
+
+So we can write
+
+```{r}
+disch_identifiers <- select(core1p, KEY, VisitLink, DaysToEvent, LOS)
+```
+
+as
+
+```{r}
+disch_identifiers <- core1p %>%
+  select(KEY, VisitLink, DaysToEvent, LOS)
+```
+
+--
+
+- Most useful when needing to 'chain' several commands together but don't want to save intermediate results or write a nested set of function calls
+
+
+---
+
+
+Suppose we want the procedure code and procedure day columns for all adults starting in 2016. We could write
+
+```{r}
+disch_adults <- filter(core1p, !is.na(AGE), AGE >= 18, YEAR >= 2016)
+disch_adults_pra <- select(
+  disch_adults,
+  KEY, VisitLink, DaysToEvent, LOS, starts_with("I0_PR"),
+  starts_with("PRDAY"))
+```
+
+or
+
+```{r}
+disch_adults_prb <-
+  select(
+    filter(
+      core1p,
+      !is.na(AGE), AGE >= 18, YEAR >= 2016
+    ),
+    KEY, VisitLink, DaysToEvent, LOS, starts_with("I0_PR"),
+    starts_with("PRDAY")
+  )
+```
+
+
+---
+
+
+# The pipe `%>%` operator
+
+But a bit clearer would be
+
+```{r}
+disch_adults_prc <- core1p %>%
+  filter(!is.na(AGE), AGE >= 18, YEAR >= 2016) %>%
+  select(
+    KEY, VisitLink, DaysToEvent, LOS, starts_with("I0_PR"),
+    starts_with("PRDAY")
+  )
+```
