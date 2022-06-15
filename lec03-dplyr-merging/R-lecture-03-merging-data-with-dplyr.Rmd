@@ -1,0 +1,251 @@
+---
+title: "Merging data using dplyr"
+institute: "Using Administrative Data for<br>Clinical and Health Services Research"
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r knit, eval = FALSE, include = FALSE}
+rmarkdown::render("./R-lecture-03-merging-data-with-dplyr.Rmd")
+```
+
+```{r setup, include = FALSE, cache = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE
+)
+```
+
+```{r xaringan-themer, include = FALSE, warning = FALSE}
+library(xaringanthemer)
+style_solarized_dark()
+```
+
+```{r demo-setup, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+
+options(width = 70)
+payer_info <- tribble(
+  ~VisitLink, ~PAY1,
+  46571, 1,
+  93576, 3,
+  69250, 3
+)
+charge_info <- tribble(
+  ~VisitLink, ~TOTCHG,
+  46571, 28004,
+  93576, 7140,
+  73038, 82450
+)
+payer_info2 <- tribble(
+  ~VisitLink, ~PAY1, ~AGE,
+  46571, 1, 25,
+  93576, 3, 31,
+  69250, 3, 44
+)
+charge_info2 <- tribble(
+  ~VisitLink, ~TOTCHG, ~AGE,
+  46571, 28004, 25,
+  93576, 7140, 31,
+  73038, 82450, 76
+)
+```
+
+
+# Overview
+
+- Merging in the SID
+
+- Key variables
+
+- Examples
+
+
+---
+
+
+# Merging in the SID
+
+- Most variables of interest available in the CORE files
+
+- Exceptions:
+
+  - Detailed charges
+  
+  - Hospital characteristics
+  
+  - External data (e.g., from Census Bureau)
+
+--
+
+### Keys
+
+- Variables used to merge data sets are referred to as *keys*
+
+--
+
+- Merging requires understanding of how data are organized and what variable(s) represent keys
+
+- `KEY` in the SID makes this easy for discharge *records*
+
+
+---
+
+
+# Examples
+
+```{r}
+payer_info
+charge_info
+```
+
+
+---
+
+
+# Inner Join
+
+- Combines observations with matches in the key variable(s)
+
+  - Unmatched records are dropped
+
+--
+
+```{r}
+payer_and_charge_info <- inner_join(
+  payer_info, charge_info, by = "VisitLink")
+payer_and_charge_info
+```
+
+--
+
+- Or using `%>%`,
+
+```{r}
+payer_and_charge_info <- payer_info %>%
+  inner_join(charge_info, by = "VisitLink")
+```
+
+
+---
+
+
+# Left Join
+
+- Combines observations with matches in the key variable(s)
+
+  - Unmatched records in 'left' data set are retained, those in 'right' data set are dropped
+
+--
+
+```{r}
+payer_and_maybe_charge_info <- payer_info %>%
+  left_join(charge_info, by = "VisitLink")
+payer_and_maybe_charge_info
+```
+
+--
+
+- `right_join` works in an analogous way
+
+
+---
+
+
+# Full join
+
+- Combines observations with matches in the key variable(s)
+
+  - Unmatched records in both data sets are retained
+
+--
+
+```{r}
+payer_or_charge_info <- payer_info %>%
+  full_join(charge_info, by = "VisitLink")
+payer_or_charge_info
+```
+
+
+---
+
+
+# Anti Join
+
+- *Removes* observations with matches in the key variable(s)
+
+--
+
+```{r}
+missing_payer_info <- payer_or_charge_info %>%
+  filter(is.na(PAY1))
+missing_payer_info
+```
+
+--
+
+```{r}
+charge_info_but_only_if_payer_info <- charge_info %>%
+  anti_join(missing_payer_info, by = "VisitLink")
+charge_info_but_only_if_payer_info
+```
+
+
+---
+
+
+# Merging Tip
+
+- Make sure the only shared variables are the key variable(s)
+
+```{r}
+payer_info2
+charge_info2
+```
+
+
+---
+
+
+# Merging Tip
+
+- Make sure the only shared variables are the key variable(s)
+
+```{r}
+payer_and_charge_info_with_duplicate_age <- payer_info2 %>%
+  inner_join(charge_info2, by = "VisitLink")
+payer_and_charge_info_with_duplicate_age
+```
+
+
+---
+
+
+# Merging Tip
+
+- Make sure the only shared variables are the key variable(s)
+
+```{r}
+payer_and_charge_info_without_duplicate_age <- payer_info2 %>%
+  select(!AGE) %>%
+  inner_join(charge_info2, by = "VisitLink")
+payer_and_charge_info_without_duplicate_age
+```
+
+
+---
+
+
+# Merging Tip
+
+- Alternatively, add shared variables to the key
+
+```{r}
+payer_and_charge_info_without_duplicate_age <- payer_info2 %>%
+  inner_join(charge_info2, by = c("VisitLink", "AGE"))
+payer_and_charge_info_without_duplicate_age
+```
