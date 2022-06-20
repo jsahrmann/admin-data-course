@@ -34,7 +34,7 @@ chgs
 # Characterize use of operating room services in the 1% sample of the
 # Florida SID. Create an overall summary as well as summaries
 # stratified by (1) `FEMALE` and (2) age. Only use records of Florida
-# residents with a nonmissing value for total charges (`TOTCHG`).
+# resident with a nonmissing value for total charges (`TOTCHG`).
 
 
 ## Data exploration ---------------
@@ -42,28 +42,22 @@ chgs
 # Examine total charges in the 1% sample file.
 summary(core1p$TOTCHG)
 summary(core1p$TOTCHG_X)
-# (In this case, `TOTCHG` and `TOTCHG_X` are the same, but there will
-# be cases when working with the full SID data where `TOTCHG` is
-# missing but `TOTCHG_x` is not.)
 
 # Examine OR charges in the complete charges file. See the HCUP SID
 # documentation for an explanation of which revenue center codes
 # correspond to each column in the CHARGES files.
 summary(chgs$CHG12)
-# No missing values
 
 
 ## Data management ----------------
 
-# Keep only discharges for Florida residents with a valid `TOTCHG`.
+# Keep only dischcharges for Florida residents with a valid `TOTCHG`.
 disch_flres_and_valid_TOTCHG <- core1p %>%
-  # Replace missing `TOTCHG` with values from source if available.
   mutate(TOTCHG = ifelse(is.na(TOTCHG), TOTCHG_X, TOTCHG)) %>%
-  # Remove any remaining records with missing charges information or
-  # from non-Florida residents.
   filter(!is.na(TOTCHG) & PSTATE == "FL")
+disch_flres_and_valid_TOTCHG
 
-# Link the discharge records with the detailed charges.
+# Link the dischcharge records with the detailed charges.
 disch_all_CHG <- disch_flres_and_valid_TOTCHG %>%
   inner_join(chgs, by = "KEY") %>%
   rename(ORCHG = CHG12)
@@ -78,26 +72,24 @@ disch_all_CHG_any_OR <- disch_all_CHG %>%
 # Produce an overall summary.
 ftab_any_OR <- table(disch_all_CHG_any_OR$any_OR, useNA = "ifany")
 ftab_any_OR
-mean(disch_all_CHG_any_OR$any_OR, na.rm = TRUE) * 100
-quantile(disch_all_CHG_any_OR$ORCHG, probs = c(0.25, 0.50, 0.75,0.95))
+mean(disch_all_CHG_any_OR$any_OR) * 100
+quantile(disch_all_CHG_any_OR$ORCHG, probs = c(.25, .5, .75, .95))
 mean(disch_all_CHG_any_OR$ORCHG)
 sd(disch_all_CHG_any_OR$ORCHG)
-
 
 # Produce a summary stratified by `FEMALE`.
 
 table(disch_all_CHG_any_OR$FEMALE, useNA = "ifany")
-# No missing values.
 
 summary_OR_by_FEMALE <- disch_all_CHG_any_OR %>%
   group_by(FEMALE) %>%
   summarise(
     n_any_OR = sum(any_OR),
     pct_any_OR = mean(any_OR) * 100,
-    p25_ORCHG = quantile(ORCHG, 0.25),
-    p50_ORCHG = quantile(ORCHG, 0.50),
-    p75_ORCHG = quantile(ORCHG, 0.75),
-    p95_ORCHG = quantile(ORCHG, 0.95),
+    p25_ORCHG = quantile(ORCHG, .25),
+    p50_ORCHG = quantile(ORCHG, .5),
+    p75_ORCHG = quantile(ORCHG, .75),
+    p95_ORCHG = quantile(ORCHG, .95),
     mean_ORCHG = mean(ORCHG),
     sd_ORCHG = sd(ORCHG)
   )
@@ -107,7 +99,6 @@ summary_OR_by_FEMALE
 # Produce a summary stratified by age group.
 
 summary(disch_all_CHG_any_OR$AGE)
-# One missing value.
 
 summary_OR_by_age_group <- disch_all_CHG_any_OR %>%
   # Remove records with missing AGE.
@@ -119,7 +110,7 @@ summary_OR_by_age_group <- disch_all_CHG_any_OR %>%
       labels = c(
         "0-4 y", "5-17 y", "18-39 y", "40-64 y", "65-74 y", "75+ y"),
       include.lowest = TRUE)
-  ) %>%
+    ) %>%
   # Group by the new age group variable so we can compute summary
   # statistics within each group.
   group_by(age_group) %>%

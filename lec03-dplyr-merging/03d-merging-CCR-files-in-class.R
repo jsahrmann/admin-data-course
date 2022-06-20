@@ -57,7 +57,7 @@ ccr
 ## Sample Problem  ---------------------------------------------------
 
 # Compare the characteristics of hospitals in the admissions that see
-# patients residing the in the poorest and wealthiest quartile of ZIP
+# patients residing in the poorest and wealthiest quartile of ZIP
 # codes. Use `MEDINCSTQ` to get the income quartile of each patient's
 # ZIP code and `HTYPE` (from the HCUP cost-to-charge ratio files) for
 # hospital characteristics.
@@ -68,17 +68,7 @@ ccr
 # Examine frequencies of `MEDINCSTQ` in the 1% sample data set and
 # `HTYPE` in the cost-to-charge ratio files.
 
-ftab_MEDINCSTQ <- table(core1p$MEDINCSTQ, useNA = "ifany")
-ftab_MEDINCSTQ
-proportions(ftab_MEDINCSTQ)
-# The values 1--4 (1 = lowest income quartile, 4 = highest income
-# quartile) each have a frequency of roughly 25%, though the highest
-# income quartile is noticeably smaller at 18.5%. There are 2,333
-# (2.2%) of admissions with missing values.
 
-ftab_HYTPE <- table(ccr$HTYPE, useNA = "ifany")
-ftab_HYTPE
-proportions(ftab_HYTPE)
 # See Table 2 (pp 6--8) in
 # https://www.hcup-us.ahrq.gov/db/ccr/ip-ccr/IPCCR-UserGuide-2012-2019.pdf
 # for an explanation of the codes. Also copied below for convenience:
@@ -93,9 +83,6 @@ proportions(ftab_HYTPE)
 # 6 = not-for-profit, urban, 100–299 beds
 # 7 = not-for-profit, urban, 300 or more beds.
 
-# Codes 2 and 1 are most common, collectively making up just over 50%
-# of the Florida records. There are no missing values.
-
 
 ## Data management ----------------
 
@@ -109,49 +96,10 @@ proportions(ftab_HYTPE)
 # which will add `HOSPID` to the 1% sample data set. The AHA files are
 # released each year, so we will use both `DSHOSPID` *and* `YEAR` as
 # keys.
-core1p_ahal <- core1p %>%
-  left_join(ahal, by = c("YEAR", "DSHOSPID")) %>%
-  # Add `YEAR`, `DSHOSPID`, and `HOSPID` to the first columns of the
-  # output data set so we can see them when printing to the R console.
-  relocate(YEAR, DSHOSPID, HOSPID)
-core1p_ahal
+
 
 # Check if there are missing values in `HOSPID`.
-sum(is.na(core1p_ahal$HOSPID))
-# 724 admissions in the 1% sample data set have a `DSHOSPID` that
-# lacks a matching `HOSPID`.
+
 
 # Now merge the '1% sample + AHA linkage' data set to the
 # cost-to-charge ratio data set.
-core1p_ccr <- core1p_ahal %>%
-  inner_join(ccr, by = c("YEAR", "HOSPID"))
-
-# Check if there are missing values in `HOSPID`.
-sum(is.na(core1p_ccr$HOSPID))
-# No missing values. The 724 admissions noted above did not find a
-# match in `ccr` and so were dropped because we used an inner
-# join. These records would not have been dropped had we used a left
-# join, for example. But because our interest is in `HYTPE`, we can
-# argue that we're justified in making this exclusion.
-
-hosp_summary_patient_zip_income <- core1p_ccr %>%
-  # Restrict to just the admissions of patients living in the highest
-  # and lowest income quartiles.
-  filter(MEDINCSTQ %in% c(1, 4)) %>%
-  group_by(MEDINCSTQ) %>%
-  summarise(
-    n_1 = mean(HTYPE == 1) * 100,
-    n_2 = mean(HTYPE == 2) * 100,
-    n_3 = mean(HTYPE == 3) * 100,
-    n_4 = mean(HTYPE == 4) * 100,
-    n_5 = mean(HTYPE == 5) * 100,
-    n_6 = mean(HTYPE == 6) * 100,
-    n_7 = mean(HTYPE == 7) * 100
-  )
-hosp_summary_patient_zip_income
-# Approximately half of all admissions by patients living in the
-# wealthiest and poorest areas occur in large, urban, not-for-profit
-# hospitals. Patients in poorer areas are more likely to be seen by
-# private hospitals, and patients in wealthier areas are more likely
-# to be seen at smaller, urban not-for-profit hospitals. Admissions to
-# 'rural' hospitals are extremely rare.
