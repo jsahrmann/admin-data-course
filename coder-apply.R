@@ -100,6 +100,32 @@ mutate_flag_dx <- function(.data, codes, name) {
     )
 }
 
+dx_flag <- function(x, codes) {
+  y <- c(
+    x[["I10_DX_Admitting"]], x[["I10_DX1"]], x[["I10_DX2"]],
+    x[["I10_DX3"]], x[["I10_DX4"]], x[["I10_DX5"]], x[["I10_DX6"]],
+    x[["I10_DX7"]], x[["I10_DX8"]], x[["I10_DX9"]], x[["I10_DX10"]],
+    x[["I10_DX11"]], x[["I10_DX12"]], x[["I10_DX13"]],
+    x[["I10_DX14"]], x[["I10_DX15"]], x[["I10_DX16"]],
+    x[["I10_DX17"]], x[["I10_DX18"]], x[["I10_DX19"]],
+    x[["I10_DX20"]], x[["I10_DX21"]], x[["I10_DX22"]],
+    x[["I10_DX23"]], x[["I10_DX24"]], x[["I10_DX25"]],
+    x[["I10_DX26"]], x[["I10_DX27"]], x[["I10_DX28"]],
+    x[["I10_DX29"]], x[["I10_DX30"]], x[["I10_DX31"]],
+    x[["I10_DX32"]], x[["I10_DX33"]], x[["I10_DX34"]],
+    x[["I10_ECAUSE1"]], x[["I10_ECAUSE2"]], x[["I10_ECAUSE3"]],
+    x[["I10_ECAUSE4"]], x[["I10_ECAUSE5"]], x[["I10_ECAUSE6"]])
+  y <- y[!is.na(y) & y != ""]
+  as.integer(any(y %in% codes))
+}
+
+core1p3 <- core1p %>%
+  mutate(
+    dx_acutemi = apply(core1p, 1, dx_flag, dx10_acutemi)
+  )
+table(core1p3$dx_acutemi)
+
+
 mutate_flag_dx_not_POA <- function(.data, codes, name) {
   .data %>%
     mutate(
