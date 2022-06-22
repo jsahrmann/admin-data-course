@@ -13,9 +13,6 @@ library(tidyverse)
 # setwd("//storage1.ris.wustl.edu/colditzg/Active/admin_course_jsahrmann")
 
 
-## Input data --------------------------------------------------------
-
-
 ## Constant definitions ----------------------------------------------
 
 
@@ -26,6 +23,24 @@ library(tidyverse)
 dx10_acutemi <- c(
   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
   "I213", "I214", "I220", "I221", "I222", "I228", "I229"
+)
+# Ischemic Stroke
+# I63.0-I63.6, I63.8, I63.9
+dx10_istroke <- c(
+  "I6300", "I63011", "I63012", "I63013", "I63019", "I6302", "I63031",
+  "I63032", "I63033", "I63039", "I6309", "I6310", "I63111", "I63112",
+  "I63113", "I63119", "I6312", "I63131", "I63132", "I63133", "I63139",
+  "I6319", "I6320", "I63211", "I63212", "I63213", "I63219", "I6322",
+  "I63231", "I63232", "I63233", "I63239", "I6329", "I6330", "I63311",
+  "I63312", "I63313", "I63319", "I63321", "I63322", "I63323",
+  "I63329", "I63331", "I63332", "I63333", "I63339", "I63341",
+  "I63342", "I63343", "I63349", "I6339", "I6340", "I63411", "I63412",
+  "I63413", "I63419", "I63421", "I63422", "I63423", "I63429",
+  "I63431", "I63432", "I63433", "I63439", "I63441", "I63442",
+  "I63443", "I63449", "I6349", "I6350", "I63511", "I63512", "I63513",
+  "I63519", "I63521", "I63522", "I63523", "I63529", "I63531",
+  "I63532", "I63533", "I63539", "I63541", "I63542", "I63543",
+  "I63549", "I6359", "I636", "I638", "I6381", "I6389", "I639"
 )
 
 
@@ -95,7 +110,7 @@ pr10_cabg <- c(
 core1p <- read_rds("../admin_course_data/fl_sidc_core_1pSample.rds")
 
 
-## Variable creation (Part 1) ----------------------------------------
+## Variable creation -------------------------------------------------
 
 # Our goal is to determine whether a particular diagnosis or procedure
 # was coded during an admission. To put this in more
@@ -114,7 +129,7 @@ my_data <- data.frame(KEY = 1, DX1 = "I220")
 
 # my_data %>%
 #   mutate(
-#     is_acutemi = ifelse(DX1 == "I2101" | DX1 == "I2102" | ..., 1, 0)
+#     dx_acutemi = ifelse(DX1 == "I2101" | DX1 == "I2102" | ..., 1, 0)
 #   )
 
 # However, with the sheer number of codes in ICD-10-CM/PCS, this isn't
@@ -124,9 +139,9 @@ my_data <- data.frame(KEY = 1, DX1 = "I220")
 
 my_data %>%
   mutate(
-    is_acutemi = ifelse(DX1 %in% dx10_acutemi, 1, 0)
+    dx_acutemi = ifelse(DX1 %in% dx10_acutemi, 1, 0)
   )
-#   KEY  DX1 is_acutemi
+#   KEY  DX1 dx_acutemi
 # 1   1 I220          1
 
 # To add one layer of complexity, what if we have multiple admissions
@@ -144,8 +159,8 @@ my_data <- data.frame(
 )
 
 my_data %>%
-  mutate(is_acutemi = if_else(DX1 %in% dx10_acutemi, 1, 0))
-#   KEY   DX1 is_acutemi
+  mutate(dx_acutemi = if_else(DX1 %in% dx10_acutemi, 1, 0))
+#   KEY   DX1 dx_acutemi
 # 1   1  I220          1
 # 2   2 E0800          0
 
@@ -167,10 +182,10 @@ my_data <- data.frame(
 
 my_data %>%
   mutate(
-    is_acutemi = if_else(
+    dx_acutemi = if_else(
       DX1 %in% dx10_acutemi | DX2 %in% dx10_acutemi, 1, 0)
   )
-#   KEY  DX1   DX2 is_acutemi
+#   KEY  DX1   DX2 dx_acutemi
 # 1   1 I220 E0800          1
 # 2   2 I209  I220          1
 # 3   3  J80 O9921          0
@@ -285,217 +300,82 @@ table(core1p2$pr_cabg, useNA = "ifany")
 # (Note that unlike diagnosis codes, there's no special significance
 # to the code in `I10_PR1`.)
 
-DXcols2_wAcuteMI <- DXcols2 %>%
-  mutate(
-    dx_acuteMI = if_else(
-      c(DX1, DX2) %in% dx10_acuteMI, 1, 0)
-  )
-## Error: Problem with `mutate()` column `dx_AcuteMI`.
-## i `dx_AcuteMI = if_else(c(DX1, DX2) %in% dx10_acuteMI, 1, 0)`.
-## i `dx_AcuteMI` must be size 3 or 1, not 6.
 
-# Uh oh, that didn't work. To explore why, let's evaluate the
-# expression outside of `mutate`.
+## Programming options -----------------------------------------------
 
-c(DXcols2$DX1, DXcols2$DX2) %in% dx10_acuteMI
-## [1]  TRUE FALSE FALSE FALSE  TRUE FALSE
+# The problem of identifying diagnoses and procedures across a set of
+# columns is a difficult one without an obvious, simple answer. The
+# approach outlined above, while verbose, is relatively easy to copy
+# and modify, and it is much faster than a few alternatives that I've
+# explored.
 
-# We have a vector of TRUE/FALSE of length six, but there are only
-# three observations in DXcols2. To define a new column, we need the
-# expression to return one value for each observation; hence, the
-# error.
+# Another option is to make use of a set of functions that I've
+# defined that encapsulates the code written above. The simplest
+# functions take as input a data set (such as the 1% sample data set),
+# a vector of diagnosis/procedure codes like those defined above, and
+# the name of the new variable you wish to create. It outputs the data
+# set, but with the new column added to it. Because the functions use
+# `mutate` under the hood, they're named `mutate_flag_dx`,
+# `mutate_flag_pr`, etc. Here are examples that repeat those run
+# previously.
 
-# As it turns out, there already is a function---`any`--- that
-# collapses a vector of TRUE/FALSE using logical 'or':
-any(c(TRUE, FALSE))
-## [1] TRUE
+# First we need to read the R script in which the functions are
+# defined so that we have access to them. (This is similar to running
+# `library` for a package.) We do this with `source`:
 
-# So maybe if we wrap the conditional in `any`:
+source("//storage1.ris.wustl.edu/colditzg/Active/admin_course_data/code2023/coder.R")
 
-DXcols2_wAcuteMI <- DXcols2 %>%
-  mutate(
-    dx_acuteMI = if_else(
-      any(c(DX1, DX2) %in% dx10_acuteMI), 1, 0)
-  )
-DXcols2_wAcuteMI
-## KEY  DX1   DX2 dx_acuteMI
-##   1 I220 E0800          1
-##   2 I209  I220          1
-##   3  J80 O9921          1
+# This specifies the absolute path to the script on a Windows
+# machine. For Mac users, you would need to use this
 
-# We don't get the error, but the output is also wrong.
-
-# To see what's going on, consider again the expression
-
-c(DXcols2$DX1, DXcols2$DX2) %in% dx10_acuteMI
-## [1]  TRUE FALSE FALSE FALSE  TRUE FALSE
-
-# If we line up the TRUE/FALSE values with the columns in DXcols2, it
-# looks like R evaluated
-
-c("I220", "I209", "J80", "E0800", "I220", "O9921") %in% dx10_acuteMI
-## [1]  TRUE FALSE FALSE FALSE  TRUE FALSE
-
-# In words, R stacked the DX1 and DX2 columns into a single vector and
-# asked whether each value was in `dx10_acuteMI`. 
-
-# Similarly, `any` was given c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE)
-# and returned TRUE, as it should, but then `if_else` returned 1,
-# which was stored in each row of the column `dx_acuteMI`.
-
-# What we wanted is for R to take DX1 and DX2 of the first row and ask
-# whether any of those two values is in `dx10_acuteMI`, then take DX1
-# and DX2 of the second row and ask whether any of those two values is
-# in `dx10_acuteMI`, and similarly for the third row.
-
-# It turns out that this is a nontrivial problem in R, and it will
-# require us to write our own functions.
+# source("/Volumes/Active/admin_course_data/code2023/coder.R")
 
 
-# A detour on functions-----------------------------------------------
+## `mutate_flag_dx` for creating 0/1 variables for diagnoses
 
-# Functions allow us to avoid copying and pasting the same code over
-# and over again, which can easily lead to errors, especially if we
-# need to edit code that we've copied many times. They also give us a
-# chance to describe what we're doing with a meaningful name---the
-# name of the function.
+core1p2a <- mutate_flag_dx(core1p, dx10_acutemi, dx_acutemi)
+# Notice that `dx10_acutemi` is the name of the vector containing our
+# diagnosis codes, and `dx_acutemi` is the name of the new variable we
+# want to create.
+table(core1p2a$dx_acutemi, useNA = "ifany")
 
-# A function is defined using the syntax
+# As with `mutate`, we can use `%>%` to produce a chain of function
+# calls.
 
-## <functionName> <- function(<input-1>, <input-2>, <...>) {
-##   <expression-1>
-##   <expression-2>
-##   <...>
-## }
+core1p2b <- core1p %>%
+  mutate_flag_dx(dx10_acutemi, dx_acutemi)
+table(core1p2b$dx_acutemi, useNA = "ifany")
 
-# where the pieces in between '<' and '>' are meant to be replaced
-# with the name of the function, the name of its argument(s), and
-# expressions in the function body. The last expression is what the
-# function produces.
+# This makes it possible to define more than one variable in the same
+# block of code.
 
-# The first step in solving our problem is to write a function whose
-# input is a vector consisting of a list of codes. We've done all of
-# the work for this above already, so we just need to define it as a
-# function.
+core1p3 <- core1p %>%
+  mutate_flag_dx(dx10_acutemi, dx_acutemi) %>%
+  mutate_flag_dx(dx10_istroke, dx_istroke)
+table(core1p3$dx_acutemi, useNA = "ifany")
+table(core1p3$dx_istroke, useNA = "ifany")
 
-flag_acuteMI <- function(rowOfCodes) {
-  if_else(any(rowOfCodes %in% dx10_acuteMI), 1, 0)
-}
+# While still somewhat awkward, this beats having to constantly
+# copy-paste the long `case_when` function call for each diagnosis of
+# interest.
 
 
-# Variable creation (Part 2) -----------------------------------------
+## `mutate_flag_dx1` for creating 0/1 variables for primary diagnoses
 
-# We've encapsulated our code into a function. How can we use it to
-# avoid the error we encountered earlier?
+# The coder.R script also defines a function for flagging primary
+# diagnoses. (However, as shown above, this doesn't take much code, so
+# you can create those variables yourself if you choose; I provide
+# this function for consistency.)
 
-# The Tidyverse (specifically the dplyr package) provides a special
-# syntax for applying functions row-wise that's similar to `group_by`,
-# which we've looked at previously.
-
-DXcols2_wAcuteMI <- DXcols2 %>%
-  rowwise(KEY) %>%
-  mutate(
-    dx_acuteMI = flag_acuteMI(c_across(c(DX1, DX2)))
-  ) %>%
-  ungroup()
-DXcols2_wAcuteMI
-
-# `rowwise` acts like `group_by`, it tells dplyr that we want to
-# process the data 'by row'. `KEY` is the name of the variable that
-# uniquely defines each row, but it's not necessary to include a
-# variable unless you're going to use `summarise`. In other words,
-# `rowwise()` in the code above would produce the same result since
-# we're defining `dx_acuteMI` using `mutate`.
-
-# The second key point here is that we've used `c_across` to tell
-# dplyr which columns we want to process by row. We can use shorthands
-# so we don't have to write each column name explicitly, as shown
-# below where we apply this technique to the 1% sample of the Florida
-# SID.
-
-core1p_wAcuteMI <- core1p %>%
-  rowwise(KEY) %>%
-  mutate(
-    dx_acuteMI = flag_acuteMI(c_across(starts_with("I10_DX")))
-  ) %>%
-  ungroup()
-table(core1p_wAcuteMI$dx_acuteMI, useNA = "ifany")
+core1p4 <- core1p %>%
+  mutate_flag_dx1(dx10_acutemi, dx1_acutemi)
+table(core1p4$dx1_acutemi, useNA = "ifany")
 
 
-# Sample problem 1 ----------------
+## `mutate_flag_pr` for creating 0/1 variables for procedures
 
-# Define a flag variable for ischemic stroke.
+# A similar function works for procedure codes.
 
-flag_ischemicStroke <- function(rowOfCodes) {
-  if_else(any(rowOfCodes %in% dx10_ischemicStroke), 1, 0)
-}
-
-core1p_wIschemicStroke <- core1p %>%
-  rowwise(KEY) %>%
-  mutate(
-    dx_ischemicStroke =
-      flag_ischemicStroke(c_across(starts_with("I10_DX")))
-  ) %>%
-  ungroup()
-
-table(core1p_wIschemicStroke$dx_ischemicStroke, useNA = "ifany")
-
-# Other techniques for matching strings
-
-flag_ischemicStroke2 <- function(codes) {
-  if_else(
-    any(
-      ("I630" <= codes & codes <= "I636")
-      | str_sub(codes, 1, 4) %in% c("I638", "I639")
-    ),
-    1, 0
-  )
-}
-
-core1p_wIschemicStroke2 <- core1p %>%
-  rowwise(KEY) %>%
-  mutate(
-    dx_ischemicStroke =
-      flag_ischemicStroke2(c_across(starts_with("I10_DX")))
-  ) %>%
-  ungroup()
-
-table(core1p_wIschemicStroke2$dx_ischemicStroke, useNA = "ifany")
-
-
-# Sample problem 2 ----------------
-
-# Define a flag variable for PCI.
-
-flag_pci <- function(codes) {
-  if_else(any(codes %in% pr10_pci), 1, 0)
-}
-
-core1p_wPCI <- core1p %>%
-  rowwise(KEY) %>%
-  mutate(
-    pr_pci =
-      flag_pci(c_across(starts_with("I10_PR")))
-  ) %>%
-  ungroup()
-
-table(core1p_wPCI$pr_pci, useNA = "ifany")
-
-
-pr10_pci2 <- c(
-  "0270", "0271", "0272", "0273", "02C0", "02C1", "02C2", "02C3"
-)
-                                                   
-flag_pci2 <- function(codes) {
-  if_else(any(str_sub(codes, 1, 4) %in% pr10_pci2), 1, 0)
-}
-
-core1p_wPCI2 <- core1p %>%
-  rowwise(KEY) %>%
-  mutate(
-    pr_pci =
-      flag_pci2(c_across(starts_with("I10_PR")))
-  ) %>%
-  ungroup()
-
-table(core1p_wPCI2$pr_pci, useNA = "ifany")
+core1p5 <- core1p %>%
+  mutate_flag_pr(pr10_cabg, pr_cabg)
+table(core1p5$pr_cabg, useNA = "ifany")
