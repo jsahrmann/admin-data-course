@@ -159,7 +159,7 @@ my_data <- data.frame(
 )
 
 my_data %>%
-  mutate(dx_acutemi = if_else(DX1 %in% dx10_acutemi, 1, 0))
+  mutate(dx_acutemi = ifelse(DX1 %in% dx10_acutemi, 1, 0))
 #   KEY   DX1 dx_acutemi
 # 1   1  I220          1
 # 2   2 E0800          0
@@ -182,7 +182,7 @@ my_data <- data.frame(
 
 my_data %>%
   mutate(
-    dx_acutemi = if_else(
+    dx_acutemi = ifelse(
       DX1 %in% dx10_acutemi | DX2 %in% dx10_acutemi, 1, 0)
   )
 #   KEY  DX1   DX2 dx_acutemi
@@ -316,7 +316,7 @@ table(core1p2$pr_cabg, useNA = "ifany")
 # the name of the new variable you wish to create. It outputs the data
 # set, but with the new column added to it. Because the functions use
 # `mutate` under the hood, they're named `mutate_flag_dx`,
-# `mutate_flag_pr`, etc. Here are examples that repeat those run
+# `mutate_flag_pr`, etc. Here are examples that mirror the ones run
 # previously.
 
 # First we need to read the R script in which the functions are
