@@ -74,6 +74,8 @@ class: center, middle, inverse, title-slide
   - Sixth character is device
   - Seventh character is qualifier
 
+--
+
 - Similar problems with inexact matching between coding systems
 
 
@@ -254,13 +256,6 @@ core1p2 &lt;- core1p %&gt;%
   mutate(
     dx1_acutemi = ifelse(I10_DX1 %in% dx10_acutemi, 1, 0)
   )
-table(core1p2$dx1_acutemi, useNA = "ifany")
-```
-
-```
-## 
-##      0      1 
-## 100684   2049
 ```
 
 
@@ -272,6 +267,13 @@ table(core1p2$dx1_acutemi, useNA = "ifany")
 - Identifying procedures works in a similar way
 
 ``` r
+pr10_cabg &lt;- c(
+  "0210083", "0210088", "0210089", "021008C", "021008F", "021008W",
+  "0210093", "0210098", "0210099", "021009C", "021009F", "021009W",
+  "02100A3", "02100A8", "02100A9", "02100AC", "02100AF", "02100AW",
+# ..etc..
+)
+
 core1p2 &lt;- core1p %&gt;%
   mutate(
     pr_cabg = case_when(
@@ -297,6 +299,8 @@ core1p2 &lt;- core1p %&gt;%
 
   - Create a vector of codes like `dx10_acutemi`
   
+--
+  
   - Must list the codes that actually appear on records
   
 ``` r
@@ -309,6 +313,11 @@ dx10_major_depress &lt;- c(
 )
 ```
 
+--
+
+  - Use code file associated with this lecture as template
+
+
 ---
 
 
@@ -316,9 +325,9 @@ dx10_major_depress &lt;- c(
 
 - Lengthy, but relatively easy to copy and modify
 
-  - Create a vector of codes like `dx10_acutemi`
+  1. Create a vector of codes like `dx10_acutemi`
   
-  - Must list the codes that actually appear on records
+  2. Use code file associated with this lecture as template
 
 ``` r
 core1p_with_major_depress &lt;- core1p %&gt;%
@@ -330,6 +339,7 @@ core1p_with_major_depress &lt;- core1p %&gt;%
       )
   )
 ```
+
 
 ---
 
@@ -452,7 +462,7 @@ core1p_with_cabg &lt;- core1p %&gt;%
   mutate_flag_pr(pr10_cabg, pr_cabg)
 ```
 
-- Other functions will be shown in future lectures
+- Other functions will be shown in future coding demos
 
 
 ---
