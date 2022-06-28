@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="" xml:lang="">
   <head>
-    <title>Identifying Diagnosis and Procedures Codes in R</title>
+    <title>Identifying Diagnosis and Procedure Codes in R</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
   </head>
@@ -10,7 +10,7 @@
 class: center, middle, inverse, title-slide
 
 .title[
-# Identifying Diagnosis and Procedures Codes in R
+# Identifying Diagnosis and Procedure Codes in R
 ]
 .institute[
 ### Using Administrative Data for Clinical and Health Services Research
@@ -162,7 +162,9 @@ my_data &lt;- data.frame(
 )
 
 my_data %&gt;%
-  mutate(dx_acutemi = ifelse(DX1 %in% dx10_acutemi, 1, 0))
+  mutate(
+    dx_acutemi = ifelse(DX1 %in% dx10_acutemi, 1, 0)
+  )
 ```
 
 ```
@@ -271,7 +273,7 @@ pr10_cabg &lt;- c(
   "0210083", "0210088", "0210089", "021008C", "021008F", "021008W",
   "0210093", "0210098", "0210099", "021009C", "021009F", "021009W",
   "02100A3", "02100A8", "02100A9", "02100AC", "02100AF", "02100AW",
-# ..etc..
+# ...etc...
 )
 
 core1p2 &lt;- core1p %&gt;%
