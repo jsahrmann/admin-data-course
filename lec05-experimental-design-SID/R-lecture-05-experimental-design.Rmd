@@ -1,0 +1,131 @@
+---
+title: "Experimental Design with the HCUP SID"
+institute: "Using Administrative Data for<br>Clinical and Health Services Research"
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r knit, eval = FALSE, include = FALSE}
+rmarkdown::render("./R-lecture-05-experimental-design.Rmd")
+```
+
+```{r setup, include = FALSE, cache = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE
+)
+```
+
+```{r xaringan-themer, include = FALSE, warning = FALSE}
+xaringanthemer::style_solarized_light()
+```
+
+
+# Goal
+
+- Explore generic study designs for SID data
+
+--
+
+- Go from full SID data to subset containing *primary inclusion criterion*
+
+--
+
+  - Usually consists of diagnoses/procedures
+
+--
+
+  - From this smaller data set, more specific inclusion/exclusion criteria can be applied, and that information can be reported in a cohort flow diagram
+
+
+---
+
+
+# Patient- vs Admission-level
+
+- What is the unit of analysis?
+
+--
+
+- Admission-level analysis uses all records that meet inclusion/exclusion criteria
+
+--
+
+  - Cannot define baseline covariates / outcomes outside of index admissions
+  
+  - Similar to an analysis using the NIS database
+  
+--
+
+- Patient-level analysis starts with all records that meet inclusion/exclusion criteria but then chooses one record per patient, typically the earliest
+
+--
+
+  - Can use other records associated with these patients for baseline covariates / outcomes
+
+
+---
+
+
+background-image: url(img/experiment-design-1.png)
+background-size: contain
+
+
+---
+
+
+background-image: url(img/experiment-design-2.png)
+background-size: contain
+
+
+---
+
+
+background-image: url(img/experiment-design-3.png)
+background-size: contain
+
+
+---
+
+
+background-image: url(img/experiment-design-4.png)
+background-size: contain
+
+
+---
+
+
+background-image: url(img/experiment-design-5.png)
+background-size: contain
+
+
+---
+
+
+# Considerations
+
+- Choice of design is influenced by multiple factors
+
+--
+
+- Admission-level design is more straightforward to code
+
+--
+
+  - Individual records do not provide much information about timing of events
+  
+  - Limits the types of conclusions that can be made
+
+--
+
+- (Longitudinal) patient-level design requires more coding
+
+--
+
+  - More planning required to keep track of multiple data sets
+  
+  - Allows a larger set of potential outcomes
