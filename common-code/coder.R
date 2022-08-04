@@ -374,6 +374,27 @@ mutate_date_dx <- function(.data, codes, name, date_2 = "discharge") {
   }
 }
 
+#' Produce the input data set with a new column containing a 'date'
+#' variable for whether any of a specified set of codes has an exact
+#' match among the `I10_DX`n (including `I10_DX_Admitting`) columns,
+#' with 'date' meaning something similar to `DaysToEvent`, but only if
+#' the corresponding `DXPOA`n column indicates that the diagnosis *was
+#' not* present on admission. Diagnoses in `I10_DX_Admitting` and
+#' `I10_DX1` are set to `DaysToEvent`; diagnoses in other columns are
+#' set to the discharge date (default) or the midpoint of the
+#' admission based on the value of the `date_2` parameter.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @param date_2 One of c("discharge", "midpoint") specifying whether
+#'   diagnoses in `I10_DX`2+ should be assigned to discharge or the
+#'   midpoint of the admission
+#' @return The input data set with the additional column
+#' @examples
+#' my_data <- my_data %>% mutate_date_dx_not_POA("R05", date_cough)
 mutate_date_dx_not_POA <- function(
   .data, codes, name, date_2 = "discharge"
 ) {
@@ -514,6 +535,27 @@ mutate_date_dx_not_POA <- function(
   }
 }
 
+#' Produce the input data set with a new column containing a 'date'
+#' variable for whether any of a specified set of codes has an exact
+#' match among the `I10_DX`n (including `I10_DX_Admitting`) columns,
+#' with 'date' meaning something similar to `DaysToEvent`, but only if
+#' the corresponding `DXPOA`n column indicates that the diagnosis
+#' *was* present on admission. Diagnoses in `I10_DX_Admitting` and
+#' `I10_DX1` are set to `DaysToEvent`; diagnoses in other columns are
+#' set to the discharge date (default) or the midpoint of the
+#' admission based on the value of the `date_2` parameter.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @param date_2 One of c("discharge", "midpoint") specifying whether
+#'   diagnoses in `I10_DX`2+ should be assigned to discharge or the
+#'   midpoint of the admission
+#' @return The input data set with the additional column
+#' @examples
+#' my_data <- my_data %>% mutate_date_dx_POA("R05", date_cough)
 mutate_date_dx_POA <- function(.data, codes, name, date_2 = "discharge") {
   if (date_2 == "discharge") {
     .data %>%
@@ -696,6 +738,22 @@ mutate_date_dx_POA <- function(.data, codes, name, date_2 = "discharge") {
   }
 }
 
+#' Produce the input data set with a new column containing an
+#' indicator variable for whether any of a specified set of codes has
+#' an exact match either in the `I10_DX_Admitting` or the `I10_DX1`
+#' column.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' dx10_acutemi <- c(
+#'   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
+#'   "I213", "I214", "I220", "I221", "I222", "I228", "I229")
+#' my_data <- mutate_flag_dx1(my_data, dx10_acutemi, dx1_acutemi)
 mutate_flag_dx1 <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -706,6 +764,25 @@ mutate_flag_dx1 <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing an
+#' indicator variable for whether any of a specified set of codes has
+#' an exact match either in the `I10_DX_Admitting` or the `I10_DX1`
+#' column but only if the corresponding `DXPOA`n columns indicate that
+#' the diagnosis was not present on admission. (Logically, this should
+#' be rare or impossible for these diagnosis code columns.)
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' dx10_acutemi <- c(
+#'   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
+#'   "I213", "I214", "I220", "I221", "I222", "I228", "I229")
+#' my_data <- mutate_flag_dx1_not_POA(
+#'   my_data, dx10_acutemi, dx1_acutemi)
 mutate_flag_dx1_not_POA <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -716,6 +793,24 @@ mutate_flag_dx1_not_POA <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing an
+#' indicator variable for whether any of a specified set of codes has
+#' an exact match either in the `I10_DX_Admitting` or the `I10_DX1`
+#' column but only if the corresponding `DXPOA`n columns indicate that
+#' the diagnosis was present on admission. (Logically, this should
+#' always be the case for these diagnosis code columns.)
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' dx10_acutemi <- c(
+#'   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
+#'   "I213", "I214", "I220", "I221", "I222", "I228", "I229")
+#' my_data <- mutate_flag_dx1_POA(my_data, dx10_acutemi, dx1_acutemi)
 mutate_flag_dx1_POA <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -726,6 +821,23 @@ mutate_flag_dx1_POA <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing a 'date'
+#' variable for whether any of a specified set of codes has an exact
+#' match either in the `I10_DX_Admitting` or the `I10_DX1` column,
+#' with 'date' meaning something similar to `DaysToEvent`.
+#' `DaysToEvent` is always the date used.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' dx10_acutemi <- c(
+#'   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
+#'   "I213", "I214", "I220", "I221", "I222", "I228", "I229")
+#' my_data <- mutate_date_dx1(my_data, dx10_acutemi, date_dx1_acutemi)
 mutate_date_dx1 <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -736,6 +848,25 @@ mutate_date_dx1 <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing a 'date'
+#' variable for whether any of a specified set of codes has an exact
+#' match either in the `I10_DX_Admitting` or the `I10_DX1` column,
+#' with 'date' meaning something similar to `DaysToEvent`, but only if
+#' the corresponding `DXPOA` field indicates that the diagnosis was
+#' not present on admission. `DaysToEvent` is always the date used.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' dx10_acutemi <- c(
+#'   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
+#'   "I213", "I214", "I220", "I221", "I222", "I228", "I229")
+#' my_data <- mutate_date_dx1_not_POA(
+#'   my_data, dx10_acutemi, date_dx1_acutemi)
 mutate_date_dx1_not_POA <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -746,6 +877,25 @@ mutate_date_dx1_not_POA <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing a 'date'
+#' variable for whether any of a specified set of codes has an exact
+#' match either in the `I10_DX_Admitting` or the `I10_DX1` column,
+#' with 'date' meaning something similar to `DaysToEvent`, but only if
+#' the corresponding `DXPOA` field indicates that the diagnosis was
+#' present on admission. `DaysToEvent` is always the date used.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of diagnosis codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' dx10_acutemi <- c(
+#'   "I2101", "I2102", "I2109", "I2111", "I2119", "I2121", "I2129",
+#'   "I213", "I214", "I220", "I221", "I222", "I228", "I229")
+#' my_data <- mutate_date_dx1_POA(
+#'   my_data, dx10_acutemi, date_dx1_acutemi)
 mutate_date_dx1_POA <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -757,6 +907,21 @@ mutate_date_dx1_POA <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing an
+#' indicator variable for whether any of a specified set of codes has
+#' an exact match among the `I10_PR`n columns.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of procedure codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' ## 1
+#' pr10_mastectomy <- c("0HTT0ZZ", "0HTU0ZZ", "0HTV0ZZ")
+#' my_data <- my_data %>%
+#'   mutate_flag_pr(pr10_mastectomy, pr_mastectomy)
 mutate_flag_pr <- function(.data, codes, name) {
   .data %>%
     mutate(
@@ -797,6 +962,23 @@ mutate_flag_pr <- function(.data, codes, name) {
     )
 }
 
+#' Produce the input data set with a new column containing a 'date'
+#' variable for whether any of a specified set of codes has an exact
+#' match among the `I10_PR`n columns, with 'date' meaning something
+#' similar to `DaysToEvent` and based on the corresponding `PRDAY`n
+#' columns.
+#'
+#' @param .data Input data set, as in `dplyr::mutate`
+#' @param codes Character vector of procedure codes for which an
+#'   *exact* match is to be checked
+#' @param name Name of column containing the new variable (can be a
+#'   name or a string)
+#' @return The input data set with the additional column
+#' @examples
+#' ## 1
+#' pr10_mastectomy <- c("0HTT0ZZ", "0HTU0ZZ", "0HTV0ZZ")
+#' my_data <- my_data %>%
+#'   mutate_date_pr(pr10_mastectomy, date_pr_mastectomy)
 mutate_date_pr <- function(.data, codes, name) {
   .data %>%
     mutate(
